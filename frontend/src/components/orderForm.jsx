@@ -27,6 +27,7 @@ export default function OrderForm({ onSubmit }) {
             </div>
 
             <form onSubmit={submit}>
+
                 <label>Side</label>
                 <select
                     value={side}

@@ -1,4 +1,4 @@
-export function decodePacket(buffer) {
+export function decodePacketHeader(buffer) {
     const view = new DataView(buffer);
 
     let offset = 0;
@@ -25,10 +25,7 @@ export function decodePacket(buffer) {
     };
 }
 export function decodeEvent(packet) {
-    const { packetType, view, offset } = packet;
-
-    // only EVENT packets
-    //if (packetType !== 1) return null;
+    const { view, offset } = packet;
 
     let o = offset;
 
@@ -65,6 +62,77 @@ export function decodeEvent(packet) {
     }
 
     return null;
+}
+
+export function decodeSnapshot(packet) {
+    const { view, offset } = packet;
+
+    let o = offset;
+
+    const instrumentId = view.getUint32(o, true);
+    o += 4;
+
+    const bidCount = view.getUint32(o, true);
+    o += 4;
+
+    const askCount = view.getUint32(o, true);
+    o += 4;
+
+    const bids = [];
+
+    for (let i = 0; i < bidCount; i++) {
+        const price = view.getUint32(o, true);
+        o += 4;
+
+        const qty = view.getUint32(o, true);
+        o += 4;
+
+        bids.push({ price, qty });
+    }
+
+    const asks = [];
+
+    for (let i = 0; i < askCount; i++) {
+        const price = view.getUint32(o, true);
+        o += 4;
+
+        const qty = view.getUint32(o, true);
+        o += 4;
+
+        asks.push({ price, qty });
+    }
+
+    return {
+        instrumentId,
+        bids,
+        asks
+    };
+}
+
+export function decodeBookUpdate(packet) {
+    const { view, offset } = packet;
+
+    let o = offset;
+
+    const instrumentId = view.getUint32(o, true);
+    o += 4;
+
+    const price = view.getUint32(o, true);
+    o += 4;
+
+    const deltaQty = view.getInt32(o, true);
+    o += 4;
+
+    const side = view.getUint8(o);
+    o += 1;
+
+    return {
+        type: "BOOK_UPDATE",
+        instrumentId,
+        price,
+        deltaQty,
+        side: side === 0 ? "BUY" : "SELL"
+    };
 }
 
 function toTradeEvent(e) {

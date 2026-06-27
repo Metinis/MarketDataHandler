@@ -83,6 +83,12 @@ void MatchingEngine::process_order(const Order& incoming_order) {
                 }
             );
         }
+        emit_book_update(m_state, {
+        .instrument_id = order.instrument_id,
+        .price = order.price,
+        .delta_qty = (int32_t)remaining_qty,
+        .side = Side::BUY
+    });
     }
     else {
         match_side(book.bids, false);
@@ -95,6 +101,12 @@ void MatchingEngine::process_order(const Order& incoming_order) {
                     .tif = order.time_in_force
                 }
             );
+            emit_book_update(m_state, {
+        .instrument_id = order.instrument_id,
+        .price = order.price,
+        .delta_qty = (int32_t)remaining_qty,
+        .side = Side::BUY
+    });
         }
     }
 

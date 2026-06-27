@@ -49,11 +49,32 @@ struct BookOrder {
     TimeInForce tif;
 };
 
+#pragma pack(push, 1)
+struct BookUpdate {
+    uint32_t instrument_id;
+    uint32_t price;
+    int32_t delta_qty;   //+ or -
+    Side side;
+};
+#pragma pack(pop)
+
 //need to use matching engine to match these
 struct OrderBook {
-    std::map<uint32_t, std::deque<BookOrder>, std::greater<uint32_t>> bids{}; //buy price and order
+    std::map<uint32_t, std::deque<BookOrder>> bids{}; //buy price and order
     std::map<uint32_t, std::deque<BookOrder>> asks{}; //sell price and order
 };
+
+inline std::vector<PriceLevel> order_map_to_vec(const std::map<uint32_t, std::deque<BookOrder>>& map) {
+    std::vector<PriceLevel> ret{};
+    for (auto& [price, queue] : map) {
+        uint32_t total = 0;
+        for (auto& o : queue)
+            total += o.quantity;
+
+        ret.push_back({price, total});
+    }
+    return ret;
+}
 
 struct Instrument {
     bool isActive{true};
@@ -97,4 +118,8 @@ struct EngineState {
     std::queue<Event> events;
     std::mutex events_mutex;
     std::condition_variable events_cv;
+
+    std::queue<BookUpdate> book_updates;
+    std::mutex book_mutex;
+    std::condition_variable book_cv;
 };

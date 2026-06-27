@@ -46,6 +46,34 @@ namespace {
             }
         }
     }
+    [[noreturn]] void book_update_loop(EngineState& state, ClientManager& clients) {
+        while (true) {
+            BookUpdate u;
+
+            {
+                std::unique_lock lock(state.book_mutex);
+
+                state.book_cv.wait(lock, [&] {
+                    return !state.book_updates.empty();
+                });
+
+                u = state.book_updates.front();
+                state.book_updates.pop();
+            }
+
+            Packet p;
+            p.header.type = PacketType::BOOK_UPDATE;
+            p.header.length = sizeof(BookUpdate);
+            p.data.resize(sizeof(BookUpdate));
+
+            std::memcpy(p.data.data(), &u, sizeof(BookUpdate));
+
+            std::lock_guard lock(clients.mutex);
+            for (auto& c : clients.clients) {
+                c->send_packet(p);
+            }
+        }
+    }
     bool check_order(const Order& order_msg, const EngineState& engine_state) {
         if (engine_state.instruments.size() - 1 < order_msg.instrument_id) {
             //todo more thorough check
@@ -95,7 +123,6 @@ namespace {
                 Order order_msg;
                 memcpy(&order_msg, packet.data.data(), packet.header.length);
 
-                bool ok = true;
                 if (!check_order(order_msg, engine_state)) {
                     emit_event(&engine_state, {
                         .type = EventType::REJECT,
@@ -114,10 +141,7 @@ namespace {
                 }
                 engine_state.cv.notify_one();
 
-                if (ok)
-                    print_order(order_msg, engine_state);
-                else
-                    std::cout<<"Invalid Order"<<std::endl;
+                print_order(order_msg, engine_state);
 
                 return true;
             }
@@ -125,6 +149,51 @@ namespace {
                 std::cout<<"Invalid packet type received! "<< static_cast<uint16_t>(packet.header.type) <<std::endl;
                 return true;
         }
+    }
+    bool send_snapshot(Session& connection, EngineState& engine_state) {
+        auto bids = order_map_to_vec(engine_state.instruments[0].book.bids);
+        auto asks = order_map_to_vec(engine_state.instruments[0].book.asks);
+
+        uint32_t instrument_id = 0;
+        uint32_t bid_count = (uint32_t)bids.size();
+        uint32_t ask_count = (uint32_t)asks.size();
+
+        uint32_t size =
+            sizeof(uint32_t) * 3 +
+            bid_count * sizeof(PriceLevel) +
+            ask_count * sizeof(PriceLevel);
+
+        PacketHeader header{};
+        header.version = PACKET_VERSION;
+        header.type = PacketType::SNAPSHOT;
+        header.length = size;
+        header.seq = 1;
+
+        Packet packet;
+        packet.header = header;
+        packet.data.resize(size);
+
+        char* ptr = packet.data.data();
+
+        memcpy(ptr, &instrument_id, sizeof(uint32_t));
+        ptr += 4;
+
+        memcpy(ptr, &bid_count, sizeof(uint32_t));
+        ptr += 4;
+
+        memcpy(ptr, &ask_count, sizeof(uint32_t));
+        ptr += 4;
+
+        if (!bids.empty()) {
+            memcpy(ptr, bids.data(), bid_count * sizeof(PriceLevel));
+            ptr += bid_count * sizeof(PriceLevel);
+        }
+
+        if (!asks.empty()) {
+            memcpy(ptr, asks.data(), ask_count * sizeof(PriceLevel));
+        }
+
+        return connection.send_packet(packet);
     }
 
     void server_loop(Session& connection, EngineState& engine_state, ClientManager& clients) {
@@ -141,6 +210,7 @@ namespace {
                         {
                             return s.get() == &connection;
                         });
+                    std::cout<<"Client disconnected"<<std::endl;
                 }
 
                 break;
@@ -166,6 +236,10 @@ void Server::run(EngineState& engine_state) {
         event_loop(engine_state, client_manager);
     }).detach();
 
+    std::thread([&] {
+        book_update_loop(engine_state, client_manager);
+    }).detach();
+
     while (true) {
         boost::asio::ip::tcp::socket socket(m_io);
         m_acceptor.accept(socket);
@@ -175,6 +249,9 @@ void Server::run(EngineState& engine_state) {
             std::lock_guard lock(client_manager.mutex);
             client_manager.clients.push_back(session);
         }
+        std::cout<<"Client connected"<<std::endl;
+        //send snapshot
+        send_snapshot(*session, engine_state);
 
         std::thread([session, &engine_state, &client_manager] {
             server_loop(*session, engine_state, client_manager);

@@ -3,6 +3,11 @@ body {
     background: #0b0e11;
     color: #d0d0d0;
     font-family: monospace;
+    box-sizing: border-box;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 .layout {
@@ -15,6 +20,7 @@ aside {
     background: #151b23;
     padding: 20px;
     border-right: 1px solid #303640;
+    overflow-y: auto;
 }
 
 main {
@@ -23,6 +29,7 @@ main {
     flex-direction: column;
     gap: 15px;
     padding: 15px;
+    overflow-y: auto;
 }
 
 .ticket,
@@ -40,13 +47,50 @@ main {
 }
 
 input,
-select {
+select,
+input[type="number"],
+input[type="text"] {
     width: 100%;
     margin-bottom: 10px;
-    padding: 8px;
+    padding: 8px 12px;
     background: #202630;
-    color: white;
+    color: #e0e0e0;
     border: 1px solid #3a4352;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: monospace;
+    box-sizing: border-box;
+    height: 38px;
+    line-height: 1.5;
+}
+
+input:focus,
+select:focus,
+input[type="number"]:focus {
+    outline: none;
+    border-color: #4a9eff;
+    box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+input:hover,
+select:hover,
+input[type="number"]:hover {
+    border-color: #4a5568;
+}
+
+input::placeholder {
+    color: #6b7a8f;
+}
+
+select {
+    cursor: pointer;
+    appearance: auto;
+    padding-right: 30px;
+}
+
+select option {
+    background: #202630;
+    color: #e0e0e0;
 }
 
 .buy-button {
@@ -55,6 +99,17 @@ select {
     color: white;
     padding: 12px;
     border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: monospace;
+    height: 38px;
+}
+
+.buy-button:hover {
+    background: #1a9e49;
 }
 
 .sell-button {
@@ -63,12 +118,46 @@ select {
     color: white;
     padding: 12px;
     border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: monospace;
+    height: 38px;
+}
+
+.sell-button:hover {
+    background: #d63838;
 }
 
 .log {
     height: 300px;
     overflow-y: auto;
     white-space: pre-wrap;
+    background: #0b0e11;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #303640;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.log::-webkit-scrollbar-track {
+    background: #151b23;
+}
+
+.log::-webkit-scrollbar-thumb {
+    background: #3a4352;
+    border-radius: 4px;
+}
+
+.log::-webkit-scrollbar-thumb:hover {
+    background: #4a5568;
 }
 
 .asks {
@@ -77,4 +166,25 @@ select {
 
 .bids {
     color: #58d658;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+}
+
+.field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.field label {
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 4px;
+}
+
+.field input[type="number"] {
+    width: 100%;
 }

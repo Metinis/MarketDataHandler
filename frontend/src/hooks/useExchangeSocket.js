@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {decodeEvent, decodePacket} from "../protocol/event";
+import {decodeBookUpdate, decodeEvent, decodePacketHeader, decodeSnapshot} from "../protocol/decode.js";
 
 export function useExchangeSocket(onEvent) {
     const socket = useRef(null);
@@ -18,12 +18,28 @@ export function useExchangeSocket(onEvent) {
                     ? await event.data.arrayBuffer()
                     : event.data;
 
-            const packet = decodePacket(buffer);
+            const packet = decodePacketHeader(buffer);
 
-            const decoded = decodeEvent(packet);
+            if(packet.type === 1) {
+                const decoded = decodeEvent(packet);
 
-            if (decoded) {
-                onEvent?.(decoded);
+                if (decoded) {
+                    onEvent?.(decoded);
+                }
+            } else if (packet.type === 2) {
+                const decoded = decodeSnapshot(packet);
+
+                if (decoded) {
+                    console.log("PACKET:", decoded);
+                    //onSnapshot?.(decoded);
+                }
+            } else if (packet.type === 3) {
+                const decoded = decodeBookUpdate(packet);
+
+                if (decoded) {
+                    console.log("PACKET:", decoded);
+                    //onBookUpdate?.(decoded);
+                }
             }
         };
 
