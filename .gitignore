@@ -1,0 +1,14 @@
+build/
+cmake-build-*/
+*.o
+*.out
+*.a
+*.so
+*.dSYM/
+
+node_modules/
+dist/
+.vite/
+.env
+
+.DS_Store

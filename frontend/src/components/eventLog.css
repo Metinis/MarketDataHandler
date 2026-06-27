@@ -1,0 +1,26 @@
+.event {
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.event.ack {
+    color: #7CFF7C;
+}
+
+.event.reject {
+    color: #ff5c5c;
+}
+
+.event.fill {
+    color: #ffd166;
+}
+
+.muted {
+    opacity: 0.7;
+    margin-left: 6px;
+}
+
+.dim {
+    opacity: 0.45;
+    margin-left: 6px;
+}
