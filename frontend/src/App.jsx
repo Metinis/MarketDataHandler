@@ -4,6 +4,7 @@ import OrderBook from "./components/orderBook.jsx";
 import EventLog from "./components/eventLog.jsx";
 import { useExchangeSocket } from "./hooks/useExchangeSocket";
 import { encodeOrder } from "./protocol/order";
+import "./App.css"
 
 const updateOrderBook = (orders, price, deltaQty, isBid) => {
     const map = new Map();
